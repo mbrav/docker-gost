@@ -47,5 +47,3 @@ To suggest a feature or enhancement, please create an issue on GitHub with the l
 ### Docker Guidelines
 
 - Update any entrypoint scripts via the the scripts contained in the `/entrypoint` directory.
-- Update any Dockerfiles via the Dockerfile templates in the root directory (e.g. `Dockerfile-alpine.template`).
-- Run the `./update.sh` script to apply all entrypoint/Dockerfile template changes to the relevant image entrypoints & Dockerfiles.
