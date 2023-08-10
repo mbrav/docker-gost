@@ -4,4 +4,4 @@
 [![tokei](https://tokei.rs/b1/github/mbrav/docker-gost?category=lines)](https://tokei.rs/b1/github/mbrav/docker-gost)
 [![Hits-of-Code](https://hitsofcode.com/github/mbrav/docker-gost?branch=main)](https://hitsofcode.com/github/mbrav/docker-gost/view?branch=main)
 
-Docker images with OpenSSL and Russian GOST crypto algorithms 
+Docker images with OpenSSL and Russian GOST crypto algorithms
