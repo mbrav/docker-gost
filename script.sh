@@ -1,13 +1,10 @@
 #!/bin/bash
 
 script_version="0.1"
-script_dir=$(dirname "$(realpath $0)")
+script_dir="$(dirname "$(realpath "$0")")"
 
-# Docker image
-docker_image="mbrav/docker-gost"
-
-# Run build program by default
-script_command=build
+# Run all commands by default
+script_command=all
 
 # COLORS
 ncolors=$(command -v tput > /dev/null && tput colors) # supports color
@@ -84,19 +81,21 @@ help() {
     echo -e "Script for managing Docker GOST CI/Build process"
     echo
     echo -e "${YELLOW}SYNTAX${CLEAR}"
-    echo -e "./script.sh [build] [-h|v|b|n|s|a] [-u|i|t|p] [ARG]"
+    echo -e "./script.sh [build|fetch|all] [-h|v|n] [-p] [ARG]"
     echo
     echo -e "${YELLOW}EXAMPLE${CLEAR}"
     echo -e "Build all docker images"
     echo -e "./script.sh build -v"
     echo
     echo -e "${YELLOW}COMMANDS${CLEAR}"
+    echo -e "all                 Run all commands."
     echo -e "build               Build docker images."
     echo -e "fetch               Fetch new versions."
     echo
     echo -e "${YELLOW}OPTIONS${CLEAR}"
     echo -e "-h --help           Print this Help."
     echo -e "-v --verbose        Verbose output"
+    echo -e "-n --no-push        Don't push images, only build"
     echo -e "-p --path     [ARG] Path"
     echo
     echo -e "${GREEN}${TERMCOLS} colors ${CLEAR}"
@@ -109,6 +108,10 @@ if [ $# -eq 0 ]; then
 else
     while [ $# -gt 0 ]; do
         case $1 in
+            all)
+                script_command=all
+                shift # shift argument
+            ;;
             build)
                 script_command=build
                 shift # shift argument
@@ -124,6 +127,10 @@ else
             ;;
             --verbose|-v)
                 verbose=true
+                shift # shift argument
+            ;;
+            --no-push|-n)
+                no_push=true
                 shift # shift argument
             ;;
             --path|-p)
@@ -159,7 +166,7 @@ function fetch_versions {
     # source /tmp/openssl.dat && openssl_version="$MAJOR.$MINOR.$PATCH"
     # rm /tmp/openssl.dat
     
-    openssl_version="3.1.2"
+    local openssl_version="3.1.2"
 
     # Get latest nginx version 
     # curl -s -o /tmp/nginx.h https://raw.githubusercontent.com/nginx/nginx/master/src/core/nginx.h \
@@ -167,7 +174,7 @@ function fetch_versions {
     # nginx_version="$(grep 'define NGINX_VERSION' /tmp/nginx.h | sed -e 's/^.*"\(.*\)".*/\1/')"
     # rm /tmp/nginx.h
     
-    nginx_version="1.25.1"
+    local nginx_version="1.25.1"
     info_msg "Fetched latest versions:" 
     info_msg "OpenSSL $openssl_version"
     info_msg "Nginx $nginx_version"
@@ -200,76 +207,71 @@ function build_images {
     OPENSSL_VERSION=$(jq -r '.versions.openssl' data.json) 
     NGINX_VERSION=$(jq -r '.versions.nginx' data.json) 
 
-    # Build images
-    #
-    # Build Debian Bookworm 12
-    docker build --progress plain \
-        --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
-        -f debian-bookworm/Dockerfile \
-        --tag "${docker_image}:bookworm" \
-        . \
-        || error_msg "Image ${docker_image}:bookworm failed"
+    info_msg "Copying data.json"
+    cp -v "${script_dir}/data.json" "${script_dir}/.data.json"
+    
+    info_msg "Replacing variables in .data.json"
+    sed -i "s/%%openssl%%/${OPENSSL_VERSION}/g" "${script_dir}/.data.json"
+    sed -i "s/%%nginx%%/${NGINX_VERSION}/g" "${script_dir}/.data.json"
 
-    docker tag "${docker_image}:bookworm" "${docker_image}:latest" 
-    docker tag "${docker_image}:bookworm" "${docker_image}:bookworm-${OPENSSL_VERSION}"
+    info_msg ".data.json diff:\n $(diff --color data.json .data.json)"
+    
+    # Set docker repository 
+    docker_repo=$(jq -r '.docker.repository' data.json)
+    
+    # Load images from data JSON to Bash list
+    local images=($(jq -r '.images[]|.name' .data.json))
 
-    docker push "${docker_image}:latest" 
-    docker push "${docker_image}:bookworm" 
-    docker push "${docker_image}:bookworm-${OPENSSL_VERSION}"
+    # Loop through all images in list
+    for image in "${images[@]}"; do
+        info_msg "Building $image for $docker_repo"
+        
+        # Load tags for image from data JSON to Bash list
+        local tags=($(jq -r ".images[] | select(.name == \"${image}\") | .tags | join (\" \")" .data.json)) 
+        local dockerfile="$(jq -r ".images[] | select(.name == \"${image}\") | .dockerfile" .data.json)"
+        local full_img_name="${docker_repo}:${image}"
 
-    # Build Ubuntu Jammy 22.04
-    # docker build --progress plain \
-    #     --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
-    #     -f ubuntu-jammy/Dockerfile \
-    #     --tag "${docker_image}:jammy" \
-    #     . \
-    #     || error_msg "Image ${docker_image}:jammy failed"
-    #
-    # docker tag "${docker_image}:jammy" "${docker_image}:jammy"
-    # docker tag "${docker_image}:jammy" "${docker_image}:jammy-${OPENSSL_VERSION}"
-    #
-    # docker push "${docker_image}:jammy" 
-    # docker push "${docker_image}:jammy-${OPENSSL_VERSION}"
+        # Build image 
+        info_msg "Building ${full_img_name}" 
+        docker build --progress plain \
+            --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
+            -f "${dockerfile}" \
+            --tag "${full_img_name}" \
+            . \
+            && success_msg "Image ${full_img_name} build sucess" \
+            || error_msg "Image ${full_img_name} build failed" 1
 
-    # Build Debian Bookworm 12 with nginx
-    docker build --progress plain \
-        --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
-        --build-arg="NGINX_VERSION=${NGINX_VERSION}" \
-        -f debian-bookworm/nginx.Dockerfile \
-        --tag "${docker_image}:bookworm-nginx" \
-        . \
-        || error_msg "Image ${docker_image}:bookworm-nginx failed"
-
-    docker tag "${docker_image}:bookworm-nginx" "${docker_image}:nginx" 
-    docker tag "${docker_image}:bookworm-nginx" "${docker_image}:nginx-${OPENSSL_VERSION}" 
-    docker tag "${docker_image}:bookworm-nginx" "${docker_image}:nginx-${OPENSSL_VERSION}-${NGINX_VERSION}" 
-    docker tag "${docker_image}:bookworm-nginx" "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}" 
-    docker tag "${docker_image}:bookworm-nginx" "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}-${NGINX_VERSION}" 
-
-    docker push "${docker_image}:nginx-latest" 
-    docker push "${docker_image}:nginx-${OPENSSL_VERSION}" 
-    docker push "${docker_image}:nginx-${OPENSSL_VERSION}-${NGINX_VERSION}" 
-    docker push "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}" 
-    docker push "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}-${NGINX_VERSION}"
-
-    # Build Alpine 3
-    docker build --progress plain \
-        --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
-        -f alpine/Dockerfile \
-        --tag "${docker_image}:alpine" \
-        . \
-        || error_msg "Image ${docker_image}:alpine failed"
-
-    docker tag "${docker_image}:alpine" "${docker_image}:alpine-${OPENSSL_VERSION}"
-
-    docker push "${docker_image}:alpine" 
-    docker push "${docker_image}:alpine-${OPENSSL_VERSION}"
-
-    success_msg "All images built and taged sucessfully"
+        # Loop through all tags in list
+        for tag in "${tags[@]}"; do
+            info_msg "Retaging ${full_img_name} to ${docker_repo}:${tag}"
+            
+            # Retag image with all alternative tags
+            docker tag "${full_img_name}" "${docker_repo}:${tag}" \
+                && success_msg "Sucessfully retagged ${full_img_name} to ${docker_repo}:${tag}" \
+                || error_msg "Failed to retag ${full_img_name} to ${docker_repo}:${tag}" 1
+            
+            # Check if --no-push tag was passed
+            if [ -z "$no_push" ]; then
+                # Push retagged image 
+                docker push "${docker_repo}:${tag}" \
+                    && success_msg "Sucessfully pushed ${docker_repo}:${tag}" \
+                    || error_msg "Failed to push ${docker_repo}:${tag}" 1
+            else
+                warning_msg "Not pushing image since --no-push flag was passed"
+            fi
+        done 
+        success_msg "Succesfully built and pushed $image for $docker_repo"
+    done
+    success_msg "Succesfully finished built procedure"
 }
 
 # Run Command parser
 case $script_command in
+    all)
+        build_images
+        fetch_versions
+        shift # shift argument
+    ;;
     build)
         build_images
         shift # shift argument

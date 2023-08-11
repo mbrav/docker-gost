@@ -1,4 +1,7 @@
 {
+  "docker": {
+    "repository": "mbrav/docker-gost"
+  },
   "versions": {
     "openssl": "3.1.2",
     "nginx": "1.25.1"
@@ -9,7 +12,28 @@
       "dockerfile": "debian-bookworm/Dockerfile",
       "tags": [
         "latest",
-        "bookworm"
+        "bookworm",
+        "bookworm-%%openssl%%"
+      ]
+    },
+    {
+      "name": "bookworm-nginx",
+      "dockerfile": "debian-bookworm/nginx.Dockerfile",
+      "tags": [
+        "bookworm-nginx",
+        "bookworm-nginx-%%openssl%%",
+        "bookworm-nginx-%%openssl%%-%%nginx%%",
+        "nginx",
+        "nginx-%%openssl%%",
+        "nginx-%%openssl%%-%%nginx%%"
+      ]
+    },
+    {
+      "name": "alpine",
+      "dockerfile": "alpine/Dockerfile",
+      "tags": [
+        "alpine",
+        "alpine-%%openssl%%"
       ]
     }
   ]
