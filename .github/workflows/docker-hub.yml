@@ -3,7 +3,7 @@ on:
   push:
     branches: main
 jobs:
-  login:
+  docker-hub:
     runs-on: ubuntu-latest
     steps:
       - name: Install apt packages
