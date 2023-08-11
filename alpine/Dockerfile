@@ -1,8 +1,7 @@
-FROM debian:bookworm-slim as builder
+FROM alpine:3 as builder
 
 # Install build requirements
-RUN apt-get update \
-  && apt-get install build-essential cmake curl unzip ca-certificates git --no-install-recommends -y
+RUN apk add --upgrade --latest alpine-sdk cmake linux-headers unzip perl
 
 ARG OPENSSL_VERSION="openssl-${OPENSSL_VERSION:-3.1.2}"
 ARG NGINX_VERSION="${NGINX_VERSION:-1.25.1}"
@@ -59,8 +58,8 @@ RUN sed -i 's/openssl_conf = openssl_init/openssl_conf = openssl_def/g' "${OPENS
   && cp "${OPENSSL_DIR}/openssl.cnf" /etc/ssl/openssl.cnf
 
 # Clean 
-RUN apt-get remove build-essential cmake curl unzip git --purge --auto-remove -y \
-  && rm -rf /var/lib/apt/lists/* \
+RUN apk del alpine-sdk unzip perl --purge \
+  && apk cache clean \
   && rm -rf /usr/local/src/*
 
 # Create a squashed image

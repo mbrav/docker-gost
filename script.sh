@@ -1,34 +1,12 @@
 #!/bin/bash
 
-# OPENSSL_CONF=/usr/local/ssl/openssl.cnf openssl ciphers | tr ":" "\n"  | grep GOST
-# OPENSSL_CONF=/usr/local/ssl/openssl.cnf openssl ciphers -v
-# vim /usr/local/ssl/openssl.cnf
-# openssl engine -vv
-# openssl engine -vvv
-# openssl engine -t -tt -vvvv dynamic
-# openssl engine -t -tt -vvvv dynamic
-# openssl engine -c
-# OPENSSL_ENGINES=/usr/local/lib64/engines-3 openssl engine -c
-# OPENSSL_CONF=/etc/ssl/openssl.cnf engine dynamic -pre SO_PATH:gost -pre LOAD
-# OPENSSL_CONF=/etc/ssl/openssl.cnf openssl engine dynamic -pre SO_PATH:gost -pre LOAD
-# OPENSSL_CONF=/etc/ssl/openssl.cnf openssl engine dynamic -pre SO_PATH:gost -pre LOAD
-# find . -type "f" -name "dso_lic.c"
-# find . -type "f" -name "dso_lic.so"
-# find . -type "f" -name "gost.so"
-# find . -type "f" -name "dso*"
-# OPENSSL_CONF=/etc/ssl/openssl.cnf openssl list -objects | grep GOST
-# openssl ciphers -v 'ALL:eNULL' | grep gost  
-# OPENSSL_CONF=/usr/local/ssl/openssl.cnf OPENSSL_ENGINES=/usr/local/lib64/engines-3/gost.so openssl ciphers   
-# OPENSSL_CONF=/usr/local/ssl/openssl.cnf OPENSSL_ENGINES=/usr/local/lib64/engines-3 openssl ciphers   
-
-
-
-
 script_version="0.1"
 script_dir=$(dirname "$(realpath $0)")
+
+# Docker image
 docker_image="mbrav/docker-gost"
 
-# Run repo program by default
+# Run build program by default
 script_command=build
 
 # COLORS
@@ -110,17 +88,16 @@ help() {
     echo
     echo -e "${YELLOW}EXAMPLE${CLEAR}"
     echo -e "Build all docker images"
-    echo -e "./script.sh -v -b -t my-gitlab-token -p ~/gitlab"
+    echo -e "./script.sh build -v"
     echo
     echo -e "${YELLOW}COMMANDS${CLEAR}"
-    echo -e "build               Run download.py (Default)."
-    echo -e "report             Run html_reports.py"
-    echo -e "rust               Compile and run rust program"
+    echo -e "build               Build docker images."
+    echo -e "fetch               Fetch new versions."
     echo
     echo -e "${YELLOW}OPTIONS${CLEAR}"
     echo -e "-h --help           Print this Help."
     echo -e "-v --verbose        Verbose output"
-    echo -e "-p --path     [ARG] Specify Path to where git repos will be downloaded to, Default: ${repo_path}"
+    echo -e "-p --path     [ARG] Path"
     echo
     echo -e "${GREEN}${TERMCOLS} colors ${CLEAR}"
 }
@@ -136,6 +113,10 @@ else
                 script_command=build
                 shift # shift argument
             ;;
+            fetch)
+                script_command=fetch
+                shift # shift argument
+            ;;
             --help|-h)
                 help
                 shift # shift argument
@@ -146,7 +127,6 @@ else
                 shift # shift argument
             ;;
             --path|-p)
-                repo_path=$(realpath $2)
                 shift # shift argument
                 shift # shift value
             ;;
@@ -165,6 +145,10 @@ else
 fi
 
 function fetch_versions {
+    # Check for required commands 
+    command -v sponge >/dev/null || error_msg "Please install sponge utility from moreutils package"
+    command -v jq >/dev/null || error_msg "Please install jq JSON parser package"
+
     # Run build command
     info_msg "Running build"
 
@@ -184,22 +168,40 @@ function fetch_versions {
     # rm /tmp/nginx.h
     
     nginx_version="1.25.1"
-    info_msg "Latest versions:" 
+    info_msg "Fetched latest versions:" 
     info_msg "OpenSSL $openssl_version"
     info_msg "Nginx $nginx_version"
     
-    # Save to data file
-    echo "OPENSSL_VERSION=$openssl_version" > "${script_dir}/VERSION.dat"
-    echo "NGINX_VERSION=$nginx_version" >> "${script_dir}/VERSION.dat"
 
-    success_msg "All versions fetched and saved to VERSION.dat file"
+    [[ "$nginx_version" != $(jq -r '.versions.nginx' data.json) ]] \
+        && warning_msg "New Nginx version" \
+        && version_trigger=1 \
+        || success_msg "Nginx version unchaged"
+
+    [[ "$openssl_version" != $(jq -r '.versions.openssl' data.json) ]] \
+        && warning_msg "New OpenSSL version" \
+        && version_trigger=1 \
+        || success_msg "OpenSSL version unchaged"
+    
+    [[ -n "$version_trigger" ]] && warning_msg "New Version triggered"
+
+    # Save to data to json 
+    jq ".versions.openssl=\"$openssl_version\"" data.json | sponge data.json
+    jq ".versions.nginx=\"$nginx_version\"" data.json | sponge data.json
+
+    success_msg "All versions fetched and saved to data.json file"
 }
 
 function build_images {
+    # Check for required commands 
+    command -v jq >/dev/null || error_msg "Please install jq JSON parser package"
+    
+    # Set versions 
+    OPENSSL_VERSION=$(jq -r '.versions.openssl' data.json) 
+    NGINX_VERSION=$(jq -r '.versions.nginx' data.json) 
+
     # Build images
-
-    source "${script_dir}/VERSION.dat"
-
+    #
     # Build Debian Bookworm 12
     docker build --progress plain \
         --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
@@ -209,10 +211,10 @@ function build_images {
         || error_msg "Image ${docker_image}:bookworm failed"
 
     docker tag "${docker_image}:bookworm" "${docker_image}:latest" 
-    docker tag "${docker_image}:bookworm" "${docker_image}:bookworm"
     docker tag "${docker_image}:bookworm" "${docker_image}:bookworm-${OPENSSL_VERSION}"
 
     docker push "${docker_image}:latest" 
+    docker push "${docker_image}:bookworm" 
     docker push "${docker_image}:bookworm-${OPENSSL_VERSION}"
 
     # Build Ubuntu Jammy 22.04
@@ -248,7 +250,20 @@ function build_images {
     docker push "${docker_image}:nginx-${OPENSSL_VERSION}" 
     docker push "${docker_image}:nginx-${OPENSSL_VERSION}-${NGINX_VERSION}" 
     docker push "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}" 
-    docker push "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}-${NGINX_VERSION}" 
+    docker push "${docker_image}:bookworm-nginx-${OPENSSL_VERSION}-${NGINX_VERSION}"
+
+    # Build Alpine 3
+    docker build --progress plain \
+        --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
+        -f alpine/Dockerfile \
+        --tag "${docker_image}:alpine" \
+        . \
+        || error_msg "Image ${docker_image}:alpine failed"
+
+    docker tag "${docker_image}:alpine" "${docker_image}:alpine-${OPENSSL_VERSION}"
+
+    docker push "${docker_image}:alpine" 
+    docker push "${docker_image}:alpine-${OPENSSL_VERSION}"
 
     success_msg "All images built and taged sucessfully"
 }
@@ -256,10 +271,13 @@ function build_images {
 # Run Command parser
 case $script_command in
     build)
-        fetch_versions
         build_images
         shift # shift argument
-        ;;
+    ;;
+    fetch)
+        fetch_versions
+        shift # shift argument
+    ;;
     *)
         error_msg "Unknown command '$script_command'"
         error_msg "Please see list of commands that you can run in help"

@@ -1,0 +1,16 @@
+{
+  "versions": {
+    "openssl": "3.1.2",
+    "nginx": "1.25.1"
+  },
+  "images": [
+    {
+      "name": "bookworm",
+      "dockerfile": "debian-bookworm/Dockerfile",
+      "tags": [
+        "latest",
+        "bookworm"
+      ]
+    }
+  ]
+}

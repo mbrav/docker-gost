@@ -37,10 +37,7 @@ RUN cd "/usr/local/src/${OPENSSL_VERSION}" \
   && cmake --build . --config Release \
   && cmake .. \
   && make install \
-  && ln -v /usr/local/lib/*.so "${OPENSSL_LIB}/" \
-  && ln -v /usr/local/lib/ossl-modules/*.so "${OPENSSL_LIB}/ossl-modules/" \
-  && cp -rv "/usr/local/src/${OPENSSL_VERSION}/crypto" "${OPENSSL_DIR}/" \
-  && ldconfig
+  && cp -rv "/usr/local/src/${OPENSSL_VERSION}/crypto" "${OPENSSL_DIR}/"
 
 # Modify OpenSSL conf for GOST engine
 RUN sed -i 's/openssl_conf = openssl_init/openssl_conf = openssl_def/g' "${OPENSSL_DIR}/openssl.cnf" \
