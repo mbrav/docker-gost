@@ -1,15 +1,19 @@
 name: ci
-
 on:
   push:
     branches: main
-
 jobs:
   login:
     runs-on: ubuntu-latest
     steps:
+      - name: Install apt packages
+        run: sudo apt-get install -y jq moreutils
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Run docker build and upload to Docker Hub script
+        run: ./script.sh all --verbose
