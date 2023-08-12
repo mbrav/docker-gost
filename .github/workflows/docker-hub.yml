@@ -1,4 +1,4 @@
-name: ci
+name: docker-hub
 on:
   push:
     branches: main

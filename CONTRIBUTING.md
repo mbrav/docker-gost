@@ -12,7 +12,7 @@ The following is a set of guidelines for contributing to the Docker GOST image. 
 
 ## Getting Started
 
-Follow our [how to use this image guide](https://hub.docker.com/r/mbrav/docker-gost) to get the Docker NGINX image up and running.
+Follow our [how to use this image guide](https://hub.docker.com/r/mbrav/docker-gost) to get the Docker image with GOST TLS up and running.
 
 ## Contributing
 
@@ -46,4 +46,6 @@ To suggest a feature or enhancement, please create an issue on GitHub with the l
 
 ### Docker Guidelines
 
-- Update any entrypoint scripts via the the scripts contained in the `/entrypoint` directory.
+- When you edit Dockerfiles or create new ones, make sure to update [`data.json`](https://github.com/mbrav/docker-gost/blob/main/data.json) metadata file. This file contains all info that are used to keep track of versions and image tags via [`script.sh`](https://github.com/mbrav/docker-gost/blob/main/script.sh)
+- Once you edited the Dockerfiles you can run `./script.sh build --verbose --no-push` to build all images locally.
+- If you run into problems, run `./script.sh --help` to get instructions about how to use the script.
