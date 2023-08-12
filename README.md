@@ -9,8 +9,6 @@ This is the Git repo of the for [`docker-gost`](https://github.com/mbrav/docker-
 
 ## About this Repo
 
-This is the Git repo of the for [`mbav/docker-gost`](https://github.com/mbrav/docker-gost) Docker images. See [the Docker Hub page](https://hub.docker.com/repository/docker/mbrav/docker-gost/general) for the full readme on how to use this Docker image and for information regarding contributing and issues.
-
 - **Maintained by**: [mbrav](https://github.com/mbrav)
 - **Where to get help**: Literally nowhere, hence the reason I created this repository.
 - **Why to use this image**: If your application needs [`openssl`](https://github.com/openssl/openssl) with GOST crypto algorithms ([`gost-engine`](https://github.com/gost-engine/engine)). Docker images are available at [`mbav/docker-gost`](https://github.com/mbrav/docker-gost) and are automatically built and uploaded to Docker Hub using [GitHub actions](https://github.com/mbrav/docker-gost/actions/workflows/docker-hub.yml).
