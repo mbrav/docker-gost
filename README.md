@@ -23,13 +23,12 @@ The `mbrav/docker-gost` repository is tagged with the following schemed where `x
 - **Alpine 3 with Nginx**: *WIP*
 
 See [`data.json`](https://github.com/mbrav/docker-gost/blob/main/data.json) metadata file for actual information.
- 
+
 ## About this Repo
 
 - **Maintained by**: [mbrav](https://github.com/mbrav)
 - **Where to get help**: Literally nowhere, hence the reason I created this repository.
 - **Why to use this image**: If your application needs [`openssl`](https://github.com/openssl/openssl) with GOST crypto algorithms ([`gost-engine`](https://github.com/gost-engine/engine)). Docker images are available at [`mbav/docker-gost`](https://github.com/mbrav/docker-gost) and are automatically built and uploaded to Docker Hub using [GitHub actions](https://github.com/mbrav/docker-gost/actions/workflows/docker-hub.yml).
-- **Why not to use this image**: If you watch too much TV, think that these images are built with lizard Western technologies and think I might be a CIA or FSB agent (or both ;)). In that case, you are free to GFY (Go Find dockerfiles Yourself).
 
 ## Contributing
 
