@@ -7,6 +7,23 @@ Docker images with OpenSSL and Russian GOST crypto algorithms
 
 This is the Git repo of the for [`docker-gost`](https://github.com/mbrav/docker-gost) Docker images. See [the Docker Hub page](https://hub.docker.com/repository/docker/mbrav/docker-gost/general) for the full readme on how to use this Docker image and for information regarding contributing and issues.
 
+## Supported tags and their respective Dockerfiles
+
+The `mbrav/docker-gost` repository is tagged with the following schemed where `x.x.x` is the OpenSSL version and `y.y.y` is the nginx version:
+
+- **Debian Bookworm (12)**:
+  - Tags: `latest`, `bookworm`, `bookworm-x.x.x`
+  - Dockerfile: [debian-bookworm/Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-bookworm/Dockerfile)
+- **Debian Bookworm (12) with Nginx**:
+  - Tags: `bookworm-nginx`, `bookworm-nginx-x.x.x`, `bookworm-nginx-x.x.x-y.y.y`, `nginx`, `nginx-x.x.x`, `nginx-x.x.x-y.y.y`
+  - Dockerfile: [debian-bookworm/nginx.Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-bookworm/nginx.Dockerfile)
+- **Alpine 3**:
+  - Tags: `alpine`, `alpine-x.x.x`
+  - Dockerfile: [alpine/Dockerfile](https://github.com/mbrav/docker-gost/blob/main/alpine/Dockerfile)
+- **Alpine 3 with Nginx**: *WIP*
+
+See [`data.json`](https://github.com/mbrav/docker-gost/blob/main/data.json) metadata file for actual information.
+ 
 ## About this Repo
 
 - **Maintained by**: [mbrav](https://github.com/mbrav)
