@@ -2,6 +2,8 @@ name: docker-hub
 on:
   push:
     branches: main
+  schedule:
+    - cron: '1 */24 * * *'
 jobs:
   docker-hub:
     runs-on: ubuntu-latest
@@ -15,5 +17,5 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Run docker build and upload to Docker Hub script
-        run: ./script.sh all --verbose
+      - name: Fetch new versions, trigger build, upload images to Docker Hub
+        run: ./script.sh fetch --verbose

@@ -90,11 +90,14 @@ help() {
     echo -e "${YELLOW}COMMANDS${CLEAR}"
     echo -e "all                 Run all commands."
     echo -e "build               Build docker images."
-    echo -e "fetch               Fetch new versions."
+    echo -e "fetch               Fetch latest versions."
+    echo -e "fetch-openssl       Fetch latest openssl version and print to console."
+    echo -e "fetch-nginx         Fetch latest nginx version and print to console."
     echo
     echo -e "${YELLOW}OPTIONS${CLEAR}"
     echo -e "-h --help           Print this Help."
     echo -e "-v --verbose        Verbose output"
+    echo -e "-b --no-build       Don't trigger build if new version is available"
     echo -e "-n --no-push        Don't push images, only build"
     echo -e "-p --path     [ARG] Path"
     echo
@@ -120,6 +123,14 @@ else
                 script_command=fetch
                 shift # shift argument
             ;;
+            fetch-openssl)
+                script_command=fetch-openssl
+                shift # shift argument
+            ;;
+            fetch-nginx)
+                script_command=fetch-nginx
+                shift # shift argument
+            ;;
             --help|-h)
                 help
                 shift # shift argument
@@ -127,6 +138,10 @@ else
             ;;
             --verbose|-v)
                 verbose=true
+                shift # shift argument
+            ;;
+            --no-build|-b)
+                no_build=true
                 shift # shift argument
             ;;
             --no-push|-n)
@@ -150,54 +165,6 @@ else
         esac
     done
 fi
-
-function fetch_versions {
-    # Check for required commands 
-    command -v sponge >/dev/null || error_msg "Please install sponge utility from moreutils package"
-    command -v jq >/dev/null || error_msg "Please install jq JSON parser package"
-
-    # Run build command
-    info_msg "Running build"
-
-    # Get latest OpenSSL version
-    # curl -s -o /tmp/openssl.dat https://raw.githubusercontent.com/openssl/openssl/master/VERSION.dat \
-    #     warning_msg "Failed fetching newest OpenSSL version"
-    # openssl_version=$(source /tmp/openssl.dat && echo "$MAJOR.$MINOR.$PATCH")
-    # source /tmp/openssl.dat && openssl_version="$MAJOR.$MINOR.$PATCH"
-    # rm /tmp/openssl.dat
-    
-    local openssl_version="3.1.2"
-
-    # Get latest nginx version 
-    # curl -s -o /tmp/nginx.h https://raw.githubusercontent.com/nginx/nginx/master/src/core/nginx.h \
-    #     warning_msg "Failed fetching newest nginx version"
-    # nginx_version="$(grep 'define NGINX_VERSION' /tmp/nginx.h | sed -e 's/^.*"\(.*\)".*/\1/')"
-    # rm /tmp/nginx.h
-    
-    local nginx_version="1.25.1"
-    info_msg "Fetched latest versions:" 
-    info_msg "OpenSSL $openssl_version"
-    info_msg "Nginx $nginx_version"
-    
-
-    [[ "$nginx_version" != $(jq -r '.versions.nginx' data.json) ]] \
-        && warning_msg "New Nginx version" \
-        && version_trigger=1 \
-        || success_msg "Nginx version unchaged"
-
-    [[ "$openssl_version" != $(jq -r '.versions.openssl' data.json) ]] \
-        && warning_msg "New OpenSSL version" \
-        && version_trigger=1 \
-        || success_msg "OpenSSL version unchaged"
-    
-    [[ -n "$version_trigger" ]] && warning_msg "New Version triggered"
-
-    # Save to data to json 
-    jq ".versions.openssl=\"$openssl_version\"" data.json | sponge data.json
-    jq ".versions.nginx=\"$nginx_version\"" data.json | sponge data.json
-
-    success_msg "All versions fetched and saved to data.json file"
-}
 
 function build_images {
     # Check for required commands 
@@ -265,6 +232,77 @@ function build_images {
     success_msg "Succesfully finished built procedure"
 }
 
+function fetch_version_openssl {
+    # Get latest OpenSSL version and print result
+
+    curl -s "https://api.github.com/repos/openssl/openssl/tags" | \
+        # Get all tag names
+        jq -r '.[]|.name' | \
+        # Get "openssl-3.x.x" pattern
+        grep -P -m 1 'openssl-3\.[0-9]+\.[0-9]+$' | \
+        # Get version number after "openssl-"
+        cut -d "-" -f2 
+}
+
+function fetch_version_nginx {
+    # Get latest Nginx version and print result
+    
+    curl -s "https://api.github.com/repos/nginx/nginx/tags" | \
+        # Get all tag names
+        jq -r '.[]|.name' | \
+        # Get first "release-x.x.x" match
+        grep -P -m 1 'release-[0-9]+\.[0-9]+\.[0-9]+$' | \
+        # Get version number after "release-"
+        cut -d "-" -f2     
+}
+
+function fetch_versions {
+    # Check for required commands 
+    command -v sponge >/dev/null || error_msg "Please install sponge utility from moreutils package"
+    command -v jq >/dev/null || error_msg "Please install jq JSON parser package"
+    command -v curl >/dev/null || error_msg "Please install curl"
+
+    info_msg "Fetching versions"
+
+    # Get latest openssl version 
+    local openssl_version=$(fetch_version_openssl)
+
+    # Get latest nginx version 
+    local nginx_version=$(fetch_version_nginx)
+
+    info_msg "Fetched latest versions:" 
+    info_msg "OpenSSL $openssl_version"
+    info_msg "Nginx $nginx_version"
+    
+    [[ "$nginx_version" != $(jq -r '.versions.nginx' data.json) ]] \
+        && warning_msg "New Nginx version" \
+        && version_trigger=1 \
+        || success_msg "Nginx version unchaged"
+
+    [[ "$openssl_version" != $(jq -r '.versions.openssl' data.json) ]] \
+        && warning_msg "New OpenSSL version" \
+        && version_trigger=1 \
+        || success_msg "OpenSSL version unchaged"
+    
+    [[ -n "$version_trigger" ]] && warning_msg "New Version detected"
+
+    # Save version data to json 
+    jq ".versions.openssl=\"$openssl_version\"" data.json | sponge data.json
+    jq ".versions.nginx=\"$nginx_version\"" data.json | sponge data.json
+
+    success_msg "All versions fetched and saved to data.json file"
+
+    # If no_build is undefined and version_trigger is not empty
+    if [ -z "$no_build" ] && [ -n "$version_trigger" ]; then
+        warning_msg "Build triggered"
+        build_images
+    elif [ -n "$version_trigger" ]; then 
+        warning_msg "Version change detected but build not triggered"
+    else
+        success_msg "Build not triggered"
+    fi
+}
+
 # Run Command parser
 case $script_command in
     all)
@@ -278,6 +316,14 @@ case $script_command in
     ;;
     fetch)
         fetch_versions
+        shift # shift argument
+    ;;
+    fetch-openssl)
+        echo "$(fetch_version_openssl)"
+        shift # shift argument
+    ;;
+    fetch-nginx)
+        echo "$(fetch_version_nginx)"
         shift # shift argument
     ;;
     *)
