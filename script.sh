@@ -4,7 +4,7 @@ script_version="0.1"
 script_dir="$(dirname "$(realpath "$0")")"
 
 # Run all commands by default
-script_command=all
+script_command=fetch
 
 # COLORS
 ncolors=$(command -v tput > /dev/null && tput colors) # supports color
@@ -84,11 +84,10 @@ help() {
     echo -e "./script.sh [build|fetch|all] [-h|v|n] [-p] [ARG]"
     echo
     echo -e "${YELLOW}EXAMPLE${CLEAR}"
-    echo -e "Build all docker images"
-    echo -e "./script.sh build -v"
+    echo -e "Build all docker images without pusshing with verbose output"
+    echo -e "./script.sh build --no-push -v"
     echo
     echo -e "${YELLOW}COMMANDS${CLEAR}"
-    echo -e "all                 Run all commands."
     echo -e "build               Build docker images."
     echo -e "fetch               Fetch latest versions."
     echo -e "fetch-openssl       Fetch latest openssl version and print to console."
@@ -111,10 +110,6 @@ if [ $# -eq 0 ]; then
 else
     while [ $# -gt 0 ]; do
         case $1 in
-            all)
-                script_command=all
-                shift # shift argument
-            ;;
             build)
                 script_command=build
                 shift # shift argument
@@ -182,7 +177,7 @@ function build_images {
     sed -i "s/%%nginx%%/${NGINX_VERSION}/g" "${script_dir}/.data.json"
 
     info_msg ".data.json diff:\n $(diff --color data.json .data.json)"
-    
+
     # Set docker repository 
     docker_repo=$(jq -r '.docker.repository' data.json)
     
@@ -206,7 +201,7 @@ function build_images {
             --tag "${full_img_name}" \
             . \
             && success_msg "Image ${full_img_name} build sucess" \
-            || error_msg "Image ${full_img_name} build failed" 1
+            || failed_builds="${failed_builds} ${full_img_name}"
 
         # Loop through all tags in list
         for tag in "${tags[@]}"; do
@@ -305,11 +300,6 @@ function fetch_versions {
 
 # Run Command parser
 case $script_command in
-    all)
-        build_images
-        fetch_versions
-        shift # shift argument
-    ;;
     build)
         build_images
         shift # shift argument
@@ -319,11 +309,11 @@ case $script_command in
         shift # shift argument
     ;;
     fetch-openssl)
-        echo "$(fetch_version_openssl)"
+        fetch_version_openssl
         shift # shift argument
     ;;
     fetch-nginx)
-        echo "$(fetch_version_nginx)"
+        fetch_version_nginx
         shift # shift argument
     ;;
     *)
@@ -332,5 +322,11 @@ case $script_command in
         exit 1
     ;;
 esac
+
+# Check for failed variables and output bad exit code
+if [ -n "$failed_builds" ]; then
+    error_msg "Some builds were not sucessfull:\n${YELLOW}${failed_builds}"
+    exit 1
+fi
 
 exit 0

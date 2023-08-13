@@ -7,15 +7,28 @@ on:
 jobs:
   docker-hub:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      # Install requred packages
       - name: Install apt packages
         run: sudo apt-get install -y jq moreutils
+      # Checkout repository
       - name: Checkout
         uses: actions/checkout@v3
+      # Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Fetch new versions, trigger build, upload images to Docker Hub
+      # Run script that checks for new versions and triggers builds
+      - name: Run build script
         run: ./script.sh fetch --verbose
+      # Commit data.json file if changed detected
+      - name: Commit data.json metadata file
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update data.json file with new versions
+          branch: main
+          file_pattern: data.json
