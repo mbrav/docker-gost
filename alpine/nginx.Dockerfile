@@ -13,7 +13,6 @@ ENV OPENSSL_INCLUDES="/usr/local/include/openssl"
 # Download OpenSSL with GOST TLS git module 
 RUN mkdir -p /usr/local/src \
   && cd /usr/local/src \
-  && echo "OpenSSL Build BEGIN" \
   && git clone -b "${OPENSSL_VERSION}" --depth 1 https://github.com/openssl/openssl.git "${OPENSSL_VERSION}" \
   && cd "${OPENSSL_VERSION}" \
   && git checkout "${OPENSSL_VERSION}" \
