@@ -9,12 +9,12 @@ This is the Git repo of the for [`docker-gost`](https://github.com/mbrav/docker-
 
 ## Supported tags and their respective Dockerfiles
 
-The `mbrav/docker-gost` repository is tagged with the following schemed where `x.x.x` is the OpenSSL version and `y.y.y` is the nginx version:
+The `mbrav/docker-gost` repository is tagged with the following scheme where `x.x.x` is the OpenSSL version and `y.y.y` is the nginx version:
 
-- **Debian Bookworm (12)**:
+- **Debian 12 ("*Bookworm*")**:
   - Tags: `latest`, `bookworm`, `bookworm-x.x.x`
   - Dockerfile: [debian-bookworm/Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-bookworm/Dockerfile)
-- **Debian Bookworm (12) with Nginx**:
+- **Debian 12 ("*Bookworm*") with Nginx**:
   - Tags: `bookworm-nginx`, `bookworm-nginx-x.x.x`, `bookworm-nginx-x.x.x-y.y.y`, `nginx`, `nginx-x.x.x`, `nginx-x.x.x-y.y.y`
   - Dockerfile: [debian-bookworm/nginx.Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-bookworm/nginx.Dockerfile)
 - **Alpine 3**:

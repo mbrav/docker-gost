@@ -197,6 +197,7 @@ function build_images {
         info_msg "Building ${full_img_name}" 
         docker build --progress plain \
             --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
+            --build-arg="NGINX_VERSION=${NGINX_VERSION}" \
             -f "${dockerfile}" \
             --tag "${full_img_name}" \
             . \
