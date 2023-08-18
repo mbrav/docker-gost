@@ -30,11 +30,19 @@ If you do not see this list, please file an issue.
 
 ### Creating a self-signed gost2001 certificate
 
+This is by no means a professional guide, please refer to [RFC 4357](https://datatracker.ietf.org/doc/html/rfc4357) for all technical details about GOST algorithms.
+
 1. **Generate a Private Key**: Once inside a `mbrav/docker-gost` container, create a private key:
 
 ```shell
-openssl genpkey -algorithm gost2001 -pkeyopt paramset:A -out private.key
+openssl genpkey -algorithm gost2012_256 -pkeyopt paramset:A -out cert.key
 ```
+
+The possible parameters for `-algorithm` are:
+
+- `gost2001` - To generate a GOST 2001 certificate;
+- `gost2012_256` - To generate a GOST 2012 certificate with a key length of 256;
+- `gost2012_512` - To generate a GOST 2012 certificate with a key length of 512.
 
 The `-pkeyopt paramset:A` option specifies that you want to use parameter set A, which corresponds to a particular curve. Different parameter sets (curves) may offer different levels of security and performance.
 
@@ -49,13 +57,14 @@ Based on [`v3.0.2` version of gost-engine](https://github.com/gost-engine/engine
 2. **Create a Certificate Signing Request (CSR)**: Generate a CSR using the private key you created in the previous step:
 
 ```shell
-openssl req -new -key private.key -out csr.csr
+openssl req -new -key cert.key -out cert.csr \
+  -subj "/C=RU/ST=Moscow_Olast/L=Moscow/O=Big_Brother_LTD/OU=IT/CN=bigbrother.ru/emailAddress=donos@bigbrother.ru"
 ```
 
 3. **Generate a Self-Signed Certificate**: Now, use the private key and CSR to generate a self-signed certificate.
 
 ```shell
-openssl x509 -req -days 365 -in csr.csr -signkey private.key -out certificate.crt
+openssl x509 -req -days 365 -in cert.csr -signkey cert.key -out cert.pem
 ```
 
 This command will create a self-signed certificate valid for 365 days.
@@ -63,7 +72,7 @@ This command will create a self-signed certificate valid for 365 days.
 4. **Verify the Certificate** (Optional): You can verify the details of the generated certificate using the following command:
 
 ```shell
-openssl x509 -in certificate.crt -text -noout
+openssl x509 -in cert.pem -text -noout
 ```
 
 ## Supported tags and their respective Dockerfiles
