@@ -1,7 +1,7 @@
 FROM alpine:3 as builder
 
 # Install build requirements
-RUN apk add --upgrade --latest alpine-sdk cmake linux-headers unzip perl
+RUN apk add --upgrade --latest busybox alpine-sdk cmake linux-headers unzip perl
 
 ARG OPENSSL_VERSION="openssl-${OPENSSL_VERSION:-3.1.2}"
 ARG NGINX_VERSION="${NGINX_VERSION:-1.25.1}"
