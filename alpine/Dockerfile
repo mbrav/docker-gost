@@ -3,8 +3,8 @@ FROM alpine:3 as builder
 # Install build requirements
 RUN apk add --upgrade --latest busybox alpine-sdk cmake linux-headers unzip perl
 
-ARG OPENSSL_VERSION="openssl-${OPENSSL_VERSION:-3.1.2}"
-ARG NGINX_VERSION="${NGINX_VERSION:-1.25.1}"
+ARG OPENSSL_VERSION="openssl-${OPENSSL_VERSION:-3.3.0}"
+ARG NGINX_VERSION="${NGINX_VERSION:-1.25.4}"
 ENV OPENSSL_DIR="/usr/local/ssl" 
 ENV OPENSSL_LIB="/usr/local/lib64"
 ENV OPENSSL_ENGINES="/usr/local/lib64/engines-3"
@@ -34,11 +34,19 @@ RUN cd "/usr/local/src/${OPENSSL_VERSION}" \
   -DOPENSSL_ENGINES_DIR="${OPENSSL_ENGINES}" .. \
   && cmake --build . --config Release \
   && cmake .. \
-  && make install \
-  && cp -rv "/usr/local/src/${OPENSSL_VERSION}/crypto" "${OPENSSL_DIR}/"
+  && make install
+
+# Copy some built objects
+RUN cp -rv "/usr/local/src/${OPENSSL_VERSION}/crypto" "${OPENSSL_DIR}/" \
+  # Link fix
+  && rm -v /lib/x86_64-linux-gnu/libcrypto.so.3 \
+  && rm -v /lib/x86_64-linux-gnu/libssl.so.3 \
+  && ln -s /usr/local/lib64/libcrypto.so.3 /lib/x86_64-linux-gnu/ \
+  && ln -s /usr/local/lib64/libssl.so.3 /lib/x86_64-linux-gnu/
 
 # Modify OpenSSL conf for GOST engine
-RUN sed -i 's/openssl_conf = openssl_init/openssl_conf = openssl_def/g' "${OPENSSL_DIR}/openssl.cnf" \
+RUN touch "${OPENSSL_DIR}/openssl.cnf" \
+  && sed -i 's/openssl_conf = openssl_init/openssl_conf = openssl_def/g' "${OPENSSL_DIR}/openssl.cnf" \
   && echo "# GOST TLS Engine Config" >> "${OPENSSL_DIR}/openssl.cnf" \
   && echo "# OpenSSL default section" >> y \
   && echo "[ openssl_def ]" >> "${OPENSSL_DIR}/openssl.cnf" \
@@ -63,6 +71,8 @@ RUN apk del alpine-sdk unzip perl --purge \
 
 # Create a squashed image
 FROM scratch
+
+WORKDIR /root
 
 COPY --from=builder / /
 
