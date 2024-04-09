@@ -27,14 +27,6 @@
         "nginx-%%openssl%%",
         "nginx-%%openssl%%-%%nginx%%"
       ]
-    },
-    {
-      "name": "alpine",
-      "dockerfile": "alpine/Dockerfile",
-      "tags": [
-        "alpine",
-        "alpine-%%openssl%%"
-      ]
     }
   ]
 }
