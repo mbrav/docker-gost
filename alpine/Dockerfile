@@ -48,7 +48,7 @@ RUN cp -rv "/usr/local/src/${OPENSSL_VERSION}/crypto" "${OPENSSL_DIR}/" \
 RUN touch "${OPENSSL_DIR}/openssl.cnf" \
   && sed -i 's/openssl_conf = openssl_init/openssl_conf = openssl_def/g' "${OPENSSL_DIR}/openssl.cnf" \
   && echo "# GOST TLS Engine Config" >> "${OPENSSL_DIR}/openssl.cnf" \
-  && echo "# OpenSSL default section" >> y \
+  && echo "# OpenSSL default section" >> "${OPENSSL_DIR}/openssl.cnf" \
   && echo "[ openssl_def ]" >> "${OPENSSL_DIR}/openssl.cnf" \
   && echo "engines = engine_section" >> "${OPENSSL_DIR}/openssl.cnf" \
   && echo "" >> "${OPENSSL_DIR}/openssl.cnf" \
