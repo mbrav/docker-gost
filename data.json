@@ -4,7 +4,7 @@
   },
   "versions": {
     "openssl": "3.4.0",
-    "nginx": "1.27.2"
+    "nginx": "1.27.3"
   },
   "images": [
     {
