@@ -3,7 +3,7 @@
     "repository": "mbrav/docker-gost"
   },
   "versions": {
-    "openssl": "3.5.4",
+    "openssl": "3.6.0",
     "nginx": "1.29.1"
   },
   "images": [
