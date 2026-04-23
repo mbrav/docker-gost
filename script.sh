@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
 
 script_version="0.1"
 script_dir="$(dirname "$(realpath "$0")")"
@@ -7,47 +6,35 @@ script_dir="$(dirname "$(realpath "$0")")"
 # Run all commands by default
 script_command=fetch
 
-# Global flags (set by argument parser)
-verbose=""
-no_build=""
-no_push=""
-failed_builds=""
-
-# Clean up temp file on exit
-trap 'rm -f "${script_dir}/.data.json"' EXIT
-
-# COLORS — initialize all vars so set -u is satisfied
-CLEAR="" BOLD=""
-BLACK="" RED="" GREEN="" YELLOW="" BLUE="" MAGENTA="" CYAN="" GREY=""
-BLACK_I="" RED_I="" GREEN_I="" YELLOW_I="" BLUE_I="" MAGENTA_I="" CYAN_I="" WHITE=""
-TERMCOLS=80
-
-if command -v tput >/dev/null 2>&1 && [[ -z ${NO_COLOR:-} ]]; then
+# COLORS — only activate when stdout is a real TTY and tput is available
+ncolors=0
+if [[ -t 1 ]] && command -v tput >/dev/null 2>&1 && [[ -z $NO_COLOR ]]; then
   ncolors=$(tput colors 2>/dev/null || echo 0)
-  TERMCOLS=$(tput cols 2>/dev/null || echo 80)
-  CLEAR="$(tput sgr0)"
-  BOLD="$(tput bold)"
+fi
+if [[ $ncolors -ge 8 ]]; then
+  TERMCOLS=$(tput cols 2>/dev/null)
+  CLEAR="$(tput sgr0 2>/dev/null)"
 
-  if [[ $ncolors -ge 8 ]]; then
-    BLACK="$(tput setaf 0)"
-    RED="$(tput setaf 1)"
-    GREEN="$(tput setaf 2)"
-    YELLOW="$(tput setaf 3)"
-    BLUE="$(tput setaf 4)"
-    MAGENTA="$(tput setaf 5)"
-    CYAN="$(tput setaf 6)"
-    GREY="$(tput setaf 7)"
-  fi
+  # 4 bit colors
+  BLACK="$(tput setaf 0 2>/dev/null)"
+  RED="$(tput setaf 1 2>/dev/null)"
+  GREEN="$(tput setaf 2 2>/dev/null)"
+  YELLOW="$(tput setaf 3 2>/dev/null)"
+  BLUE="$(tput setaf 4 2>/dev/null)"
+  MAGENTA="$(tput setaf 5 2>/dev/null)"
+  CYAN="$(tput setaf 6 2>/dev/null)"
+  GREY="$(tput setaf 7 2>/dev/null)"
 
+  # >4 bit colors
   if [[ $ncolors -gt 8 ]]; then
-    BLACK_I="$(tput setaf 8)"
-    RED_I="$(tput setaf 9)"
-    GREEN_I="$(tput setaf 10)"
-    YELLOW_I="$(tput setaf 11)"
-    BLUE_I="$(tput setaf 12)"
-    MAGENTA_I="$(tput setaf 13)"
-    CYAN_I="$(tput setaf 14)"
-    WHITE="$(tput setaf 15)"
+    BLACK_I="$(tput setaf 8 2>/dev/null)"
+    RED_I="$(tput setaf 9 2>/dev/null)"
+    GREEN_I="$(tput setaf 10 2>/dev/null)"
+    YELLOW_I="$(tput setaf 11 2>/dev/null)"
+    BLUE_I="$(tput setaf 12 2>/dev/null)"
+    MAGENTA_I="$(tput setaf 13 2>/dev/null)"
+    CYAN_I="$(tput setaf 14 2>/dev/null)"
+    WHITE="$(tput setaf 15 2>/dev/null)"
   else
     BLACK_I=$BLACK
     RED_I=$RED
@@ -58,11 +45,17 @@ if command -v tput >/dev/null 2>&1 && [[ -z ${NO_COLOR:-} ]]; then
     CYAN_I=$CYAN
     WHITE=$GREY
   fi
+
+  # Styles
+  BOLD="$(tput bold 2>/dev/null)"
 fi
 
 function error_msg() {
+  # Error message
+  # $1            - Message string argument
+  # $2 (optional) - exit code
   echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
-  [[ -n ${2:-} ]] && exit "$2"
+  [[ -n $2 ]] && exit $2
 }
 
 function warning_msg() {
@@ -74,7 +67,8 @@ function success_msg() {
 }
 
 function info_msg() {
-  [[ -n "$verbose" ]] && echo -e "${CYAN}[i] ${*}${CLEAR}"
+  # Info message if $verbose is set
+  [ -n "$verbose" ] && echo -e "${CYAN}[i] ${*}${CLEAR}"
 }
 
 # Display Help
@@ -88,7 +82,7 @@ help() {
   echo -e "./script.sh [build|fetch|all] [-h|v|n] [-p] [ARG]"
   echo
   echo -e "${YELLOW}EXAMPLE${CLEAR}"
-  echo -e "Build all docker images without pushing with verbose output"
+  echo -e "Build all docker images without pusshing with verbose output"
   echo -e "./script.sh build --no-push -v"
   echo
   echo -e "${YELLOW}COMMANDS${CLEAR}"
@@ -103,53 +97,57 @@ help() {
   echo -e "-b --no-build       Don't trigger build if new version is available"
   echo -e "-n --no-push        Don't push images, only build"
   echo
-  echo -e "${GREEN}${TERMCOLS} colors${CLEAR}"
+  echo -e "${GREEN}${TERMCOLS} colors ${CLEAR}"
 }
 
 # ARG parser
-if [[ $# -eq 0 ]]; then
+if [ $# -eq 0 ]; then
+  # If no arguments, display help
   help
 else
-  while [[ $# -gt 0 ]]; do
+  while [ $# -gt 0 ]; do
     case $1 in
     build)
       script_command=build
-      shift
+      shift # shift argument
       ;;
     fetch)
       script_command=fetch
-      shift
+      shift # shift argument
       ;;
     fetch-openssl)
       script_command=fetch-openssl
-      shift
+      shift # shift argument
       ;;
     fetch-nginx)
       script_command=fetch-nginx
-      shift
+      shift # shift argument
       ;;
     --help | -h)
       help
+      shift # shift argument
       exit 0
       ;;
     --verbose | -v)
       verbose=true
-      shift
+      shift # shift argument
       ;;
     --no-build | -b)
       no_build=true
-      shift
+      shift # shift argument
       ;;
     --no-push | -n)
       no_push=true
-      shift
+      shift # shift argument
       ;;
     -*)
       error_msg "Unknown option $1" 22
+      exit 1
       ;;
     *)
       error_msg "Unknown argument $1"
-      echo 'If you want to pass an argument with spaces, quote it: "my argument"'
+      echo 'If you want to pass an argument with spaces'
+      echo 'pass the argument like this: "my argument"'
       exit 1
       ;;
     esac
@@ -157,114 +155,137 @@ else
 fi
 
 function build_images {
-  command -v jq >/dev/null || error_msg "Please install jq JSON parser package" 1
+  # Check for required commands
+  command -v jq >/dev/null || error_msg "Please install jq JSON parser package"
 
-  local OPENSSL_VERSION NGINX_VERSION docker_repo
+  # Set versions
   OPENSSL_VERSION=$(jq -r '.versions.openssl' data.json)
   NGINX_VERSION=$(jq -r '.versions.nginx' data.json)
 
-  info_msg "Preparing substituted build config"
-  cp "${script_dir}/data.json" "${script_dir}/.data.json"
+  info_msg "Copying data.json"
+  cp -v "${script_dir}/data.json" "${script_dir}/.data.json"
+
+  info_msg "Replacing variables in .data.json"
   sed -i "s/%%openssl%%/${OPENSSL_VERSION}/g" "${script_dir}/.data.json"
   sed -i "s/%%nginx%%/${NGINX_VERSION}/g" "${script_dir}/.data.json"
 
-  info_msg ".data.json diff:\n $(diff --color data.json .data.json || true)"
+  info_msg ".data.json diff:\n $(diff --color data.json .data.json)"
 
-  docker_repo=$(jq -r '.docker.repository' .data.json)
+  # Set docker repository
+  docker_repo=$(jq -r '.docker.repository' data.json)
 
-  local images=()
-  mapfile -t images < <(jq -r '.images[]|.name' .data.json)
+  # Load images from data JSON to Bash list
+  local images=($(jq -r '.images[]|.name' .data.json))
 
+  # Loop through all images in list
   for image in "${images[@]}"; do
     info_msg "Building $image for $docker_repo"
 
-    local tags=() dockerfile tag_args=()
-    mapfile -t tags < <(jq -r ".images[] | select(.name == \"${image}\") | .tags[]" .data.json)
-    dockerfile=$(jq -r ".images[] | select(.name == \"${image}\") | .dockerfile" .data.json)
+    # Load tags for image from data JSON to Bash list
+    local tags=($(jq -r ".images[] | select(.name == \"${image}\") | .tags | join (\" \")" .data.json))
+    local dockerfile="$(jq -r ".images[] | select(.name == \"${image}\") | .dockerfile" .data.json)"
+    local full_img_name="${docker_repo}:${image}"
 
-    for tag in "${tags[@]}"; do
-      tag_args+=(--tag "${docker_repo}:${tag}")
-    done
-
-    local push_args=()
-    if [[ -z "${no_push}" ]]; then
-      push_args=(--push)
-    else
-      warning_msg "Not pushing $image (--no-push flag was passed)"
-    fi
-
-    docker buildx build --progress plain \
-      "${push_args[@]+"${push_args[@]}"}" \
-      "${tag_args[@]}" \
+    # Build image
+    info_msg "Building ${full_img_name}"
+    docker build --progress plain \
       --build-arg="OPENSSL_VERSION=openssl-${OPENSSL_VERSION}" \
       --build-arg="NGINX_VERSION=${NGINX_VERSION}" \
       -f "${dockerfile}" \
+      --tag "${full_img_name}" \
       . &&
-      success_msg "Image ${image} built${push_args:+ and pushed}" ||
-      failed_builds="${failed_builds} ${image}"
-  done
+      success_msg "Image ${full_img_name} build sucess" ||
+      failed_builds="${failed_builds} ${full_img_name}"
 
-  success_msg "Build procedure finished"
+    # Loop through all tags in list
+    for tag in "${tags[@]}"; do
+      info_msg "Retaging ${full_img_name} to ${docker_repo}:${tag}"
+
+      # Retag image with all alternative tags
+      docker tag "${full_img_name}" "${docker_repo}:${tag}" &&
+        success_msg "Sucessfully retagged ${full_img_name} to ${docker_repo}:${tag}" ||
+        error_msg "Failed to retag ${full_img_name} to ${docker_repo}:${tag}" 1
+
+      # Check if --no-push tag was passed
+      if [ -z "$no_push" ]; then
+        # Push retagged image
+        docker push "${docker_repo}:${tag}" &&
+          success_msg "Sucessfully pushed ${docker_repo}:${tag}" ||
+          error_msg "Failed to push ${docker_repo}:${tag}" 1
+      else
+        warning_msg "Not pushing image since --no-push flag was passed"
+      fi
+    done
+    success_msg "Succesfully built and pushed $image for $docker_repo"
+  done
+  success_msg "Succesfully finished built procedure"
 }
 
 function fetch_version_openssl {
+  # Get latest OpenSSL version and print result
+
   curl -s "https://api.github.com/repos/openssl/openssl/tags" |
+    # Get all tag names
     jq -r '.[]|.name' |
+    # Get "openssl-3.x.x" pattern
     grep -P -m 1 'openssl-3\.[0-9]+\.[0-9]+$' |
+    # Get version number after "openssl-"
     cut -d "-" -f2
 }
 
 function fetch_version_nginx {
+  # Get latest Nginx version and print result
+
   curl -s "https://api.github.com/repos/nginx/nginx/tags" |
+    # Get all tag names
     jq -r '.[]|.name' |
+    # Get first "release-x.x.x" match
     grep -P -m 1 'release-[0-9]+\.[0-9]+\.[0-9]+$' |
+    # Get version number after "release-"
     cut -d "-" -f2
 }
 
 function fetch_versions {
-  command -v jq >/dev/null || error_msg "Please install jq JSON parser package" 1
-  command -v curl >/dev/null || error_msg "Please install curl" 1
+  # Check for required commands
+  command -v sponge >/dev/null || error_msg "Please install sponge utility from moreutils package"
+  command -v jq >/dev/null || error_msg "Please install jq JSON parser package"
+  command -v curl >/dev/null || error_msg "Please install curl"
 
   info_msg "Fetching versions"
 
-  local openssl_version nginx_version version_trigger=""
+  # Get latest openssl version
+  local openssl_version=$(fetch_version_openssl)
 
-  openssl_version=$(fetch_version_openssl)
-  nginx_version=$(fetch_version_nginx)
+  # Get latest nginx version
+  local nginx_version=$(fetch_version_nginx)
 
   info_msg "Fetched latest versions:"
   info_msg "OpenSSL $openssl_version"
   info_msg "Nginx $nginx_version"
 
-  if [[ "$nginx_version" != "$(jq -r '.versions.nginx' data.json)" ]]; then
-    warning_msg "New Nginx version: $nginx_version"
-    version_trigger=1
-  else
-    success_msg "Nginx version unchanged"
-  fi
+  [[ "$nginx_version" != $(jq -r '.versions.nginx' data.json) ]] &&
+    warning_msg "New Nginx version" &&
+    version_trigger=1 ||
+    success_msg "Nginx version unchaged"
 
-  if [[ "$openssl_version" != "$(jq -r '.versions.openssl' data.json)" ]]; then
-    warning_msg "New OpenSSL version: $openssl_version"
-    version_trigger=1
-  else
-    success_msg "OpenSSL version unchanged"
-  fi
+  [[ "$openssl_version" != $(jq -r '.versions.openssl' data.json) ]] &&
+    warning_msg "New OpenSSL version" &&
+    version_trigger=1 ||
+    success_msg "OpenSSL version unchaged"
 
-  [[ -n "$version_trigger" ]] && warning_msg "New version detected"
+  [[ -n "$version_trigger" ]] && warning_msg "New Version detected"
 
-  # Save both version updates atomically
-  local tmp
-  tmp=$(mktemp)
-  jq --arg openssl "$openssl_version" --arg nginx "$nginx_version" \
-    '.versions.openssl=$openssl | .versions.nginx=$nginx' \
-    data.json >"$tmp" && mv "$tmp" data.json
+  # Save version data to json
+  jq ".versions.openssl=\"$openssl_version\"" data.json | sponge data.json
+  jq ".versions.nginx=\"$nginx_version\"" data.json | sponge data.json
 
-  success_msg "Versions saved to data.json"
+  success_msg "All versions fetched and saved to data.json file"
 
-  if [[ -z "$no_build" && -n "$version_trigger" ]]; then
+  # If no_build is undefined and version_trigger is not empty
+  if [ -z "$no_build" ] && [ -n "$version_trigger" ]; then
     warning_msg "Build triggered"
     build_images
-  elif [[ -n "$version_trigger" ]]; then
+  elif [ -n "$version_trigger" ]; then
     warning_msg "Version change detected but build not triggered"
   else
     success_msg "Build not triggered"
@@ -275,25 +296,31 @@ function fetch_versions {
 case $script_command in
 build)
   build_images
+  shift # shift argument
   ;;
 fetch)
   fetch_versions
+  shift # shift argument
   ;;
 fetch-openssl)
   fetch_version_openssl
+  shift # shift argument
   ;;
 fetch-nginx)
   fetch_version_nginx
+  shift # shift argument
   ;;
 *)
   error_msg "Unknown command '$script_command'"
-  error_msg "Please see list of commands in help"
+  error_msg "Please see list of commands that you can run in help"
   exit 1
   ;;
 esac
 
-if [[ -n "$failed_builds" ]]; then
-  error_msg "Some builds were not successful:${YELLOW}${failed_builds}" 1
+# Check for failed variables and output bad exit code
+if [ -n "$failed_builds" ]; then
+  error_msg "Some builds were not sucessfull:\n${YELLOW}${failed_builds}"
+  exit 1
 fi
 
 exit 0
