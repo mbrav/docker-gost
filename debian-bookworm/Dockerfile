@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim as builder
+FROM debian:bookworm-slim AS builder
 
 # Install build requirements
 RUN apt-get update \

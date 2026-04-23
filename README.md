@@ -85,6 +85,12 @@ The `mbrav/docker-gost` repository is tagged with the following scheme where `x.
 - **Debian 12 ("*Bookworm*") with Nginx**:
   - Tags: `bookworm-nginx`, `bookworm-nginx-x.x.x`, `bookworm-nginx-x.x.x-y.y.y`, `nginx`, `nginx-x.x.x`, `nginx-x.x.x-y.y.y`
   - Dockerfile: [debian-bookworm/nginx.Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-bookworm/nginx.Dockerfile)
+- **Debian 13 ("*Trixie*")**:
+  - Tags: `trixie`, `trixie-x.x.x`
+  - Dockerfile: [debian-trixie/Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-trixie/Dockerfile)
+- **Debian 13 ("*Trixie*") with Nginx**:
+  - Tags: `trixie-nginx`, `trixie-nginx-x.x.x`, `trixie-nginx-x.x.x-y.y.y`
+  - Dockerfile: [debian-trixie/nginx.Dockerfile](https://github.com/mbrav/docker-gost/blob/main/debian-trixie/nginx.Dockerfile)
 - **Alpine 3**:
   - Tags: `alpine`, `alpine-x.x.x`
   - Dockerfile: [alpine/Dockerfile](https://github.com/mbrav/docker-gost/blob/main/alpine/Dockerfile)

@@ -27,6 +27,23 @@
         "nginx-%%openssl%%",
         "nginx-%%openssl%%-%%nginx%%"
       ]
+    },
+    {
+      "name": "trixie",
+      "dockerfile": "debian-trixie/Dockerfile",
+      "tags": [
+        "trixie",
+        "trixie-%%openssl%%"
+      ]
+    },
+    {
+      "name": "trixie-nginx",
+      "dockerfile": "debian-trixie/nginx.Dockerfile",
+      "tags": [
+        "trixie-nginx",
+        "trixie-nginx-%%openssl%%",
+        "trixie-nginx-%%openssl%%-%%nginx%%"
+      ]
     }
   ]
 }

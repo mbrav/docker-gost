@@ -1,4 +1,4 @@
-FROM alpine:3 as builder
+FROM alpine:3 AS builder
 
 # Install build requirements
 RUN apk add --upgrade --latest busybox alpine-sdk cmake linux-headers unzip perl
