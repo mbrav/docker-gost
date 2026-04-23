@@ -54,14 +54,14 @@ Based on [`v3.0.2` version of gost-engine](https://github.com/gost-engine/engine
 - [`ecp_id_GostR3410_2001_CryptoPro_B_ParamSet`](https://github.com/gost-engine/engine/blob/v3.0.2/ecp_id_GostR3410_2001_CryptoPro_B_ParamSet.c)
 - [`ecp_id_GostR3410_2001_CryptoPro_C_ParamSet`](https://github.com/gost-engine/engine/blob/v3.0.2/ecp_id_GostR3410_2001_CryptoPro_C_ParamSet.c)
 
-2. **Create a Certificate Signing Request (CSR)**: Generate a CSR using the private key you created in the previous step:
+1. **Create a Certificate Signing Request (CSR)**: Generate a CSR using the private key you created in the previous step:
 
 ```shell
 openssl req -new -key cert.key -out cert.csr \
   -subj "/C=RU/ST=Moscow_Olast/L=Moscow/O=Big_Brother_LTD/OU=IT/CN=bigbrother.ru/emailAddress=donos@bigbrother.ru"
 ```
 
-3. **Generate a Self-Signed Certificate**: Now, use the private key and CSR to generate a self-signed certificate.
+1. **Generate a Self-Signed Certificate**: Now, use the private key and CSR to generate a self-signed certificate.
 
 ```shell
 openssl x509 -req -days 365 -in cert.csr -signkey cert.key -out cert.pem
@@ -69,7 +69,7 @@ openssl x509 -req -days 365 -in cert.csr -signkey cert.key -out cert.pem
 
 This command will create a self-signed certificate valid for 365 days.
 
-4. **Verify the Certificate** (Optional): You can verify the details of the generated certificate using the following command:
+1. **Verify the Certificate** (Optional): You can verify the details of the generated certificate using the following command:
 
 ```shell
 openssl x509 -in cert.pem -text -noout
