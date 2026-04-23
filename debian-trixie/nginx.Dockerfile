@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS builder
+FROM debian:trixie-slim AS builder
 
 # Install build requirements
 RUN apt-get update \
@@ -6,12 +6,12 @@ RUN apt-get update \
 
 ARG OPENSSL_VERSION="openssl-${OPENSSL_VERSION:-3.3.0}"
 ARG NGINX_VERSION="${NGINX_VERSION:-1.25.4}"
-ENV OPENSSL_DIR="/usr/local/ssl" 
+ENV OPENSSL_DIR="/usr/local/ssl"
 ENV OPENSSL_LIB="/usr/local/lib64"
 ENV OPENSSL_ENGINES="/usr/local/lib64/engines-3"
 ENV OPENSSL_INCLUDES="/usr/local/include/openssl"
 
-# Download OpenSSL with GOST TLS git module 
+# Download OpenSSL with GOST TLS git module
 RUN mkdir -p /usr/local/src \
   && cd /usr/local/src \
   && git clone -b "${OPENSSL_VERSION}" --depth 1 https://github.com/openssl/openssl.git "${OPENSSL_VERSION}" \
@@ -75,7 +75,7 @@ RUN cd /usr/local/src \
   && tar -zxvf "nginx-${NGINX_VERSION}.tar.gz" \
   && rm "nginx-${NGINX_VERSION}.tar.gz"
 
-# Build nginx 
+# Build nginx
 RUN cd "/usr/local/src/nginx-${NGINX_VERSION}" \
   && ./configure \
   --prefix=/etc/nginx \
@@ -131,7 +131,7 @@ RUN cd "/usr/local/src/nginx-${NGINX_VERSION}" \
   && ln -sf /dev/stdout /var/log/nginx/access.log \
   && ln -sf /dev/stderr /var/log/nginx/error.log
 
-# Clean 
+# Clean
 RUN apt-get remove build-essential cmake curl unzip git --purge --auto-remove -y \
   && rm -rf /var/lib/apt/lists/* \
   && rm -rf /usr/local/src/*

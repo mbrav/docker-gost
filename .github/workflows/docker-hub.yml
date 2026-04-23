@@ -1,33 +1,41 @@
 name: docker-hub
 on:
   push:
-    branches: main
+    branches:
+      - main
   schedule:
-    - cron: '1 */24 * * *'
+    - cron: "1 0 * * *"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker-hub:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      # Install requred packages
+      # Install required packages
       - name: Install apt packages
-        run: sudo apt-get install -y jq moreutils
+        run: sudo apt-get install -y jq
       # Checkout repository
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       # Login to Docker Hub
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       # Run script that checks for new versions and triggers builds
       - name: Run build script
         run: ./script.sh fetch --verbose
-      # Commit data.json file if changed detected
+      # Commit data.json file if changes detected
       - name: Commit data.json metadata file
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Update data.json file with new versions
           branch: main
