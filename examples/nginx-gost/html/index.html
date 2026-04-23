@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>docker-gost — GOST TLS demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f1923;
+      color: #d0d8e4;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #1a2535;
+      border: 1px solid #2a3a50;
+      border-radius: 10px;
+      max-width: 680px;
+      width: 100%;
+      padding: 2.5rem 3rem;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #1a6b3c;
+      color: #7effc0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.3em 0.8em;
+      border-radius: 4px;
+      margin-bottom: 1.2rem;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      color: #eaf0fb;
+      margin-bottom: 0.6rem;
+    }
+
+    .subtitle {
+      color: #7a90aa;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #9ab0cc;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.8rem 0 0.6rem;
+    }
+
+    pre {
+      background: #0f1923;
+      border: 1px solid #2a3a50;
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      font-size: 0.85rem;
+      color: #7effc0;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+
+    .ciphers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.6rem;
+    }
+
+    .cipher {
+      background: #0f1923;
+      border: 1px solid #2a3a50;
+      border-radius: 4px;
+      padding: 0.25em 0.6em;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #7bb8f5;
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.78rem;
+      color: #4a6070;
+      border-top: 1px solid #2a3a50;
+      padding-top: 1rem;
+    }
+
+    footer a { color: #5a8fa8; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">GOST TLS Active</div>
+    <h1>Hello from docker-gost!</h1>
+    <p class="subtitle">
+      This page is served by <strong>nginx</strong> compiled against OpenSSL with the
+      <a href="https://github.com/gost-engine/engine" style="color:#7bb8f5">gost-engine</a>
+      submodule. The connection between the proxy and this server is secured with a
+      self-signed <strong>GOST 2012</strong> certificate.
+    </p>
+
+    <h2>Inspect the certificate</h2>
+    <pre>openssl s_client \
+  -connect localhost:443 \
+  -cipher GOST2012-KUZNYECHIK-KUZNYECHIKOMAC \
+  &lt;/dev/null</pre>
+
+    <h2>Verify available GOST ciphers</h2>
+    <pre>openssl ciphers | tr ':' '\n' | grep GOST</pre>
+
+    <h2>Active cipher suites</h2>
+    <div class="ciphers">
+      <span class="cipher">GOST2012-MAGMA-MAGMAOMAC</span>
+      <span class="cipher">GOST2012-KUZNYECHIK-KUZNYECHIKOMAC</span>
+      <span class="cipher">LEGACY-GOST2012-GOST8912-GOST8912</span>
+      <span class="cipher">GOST2001-GOST89-GOST89</span>
+    </div>
+
+    <footer>
+      <a href="https://github.com/mbrav/docker-gost">mbrav/docker-gost</a>
+      &mdash; OpenSSL + GOST engine Docker images
+    </footer>
+  </div>
+</body>
+</html>

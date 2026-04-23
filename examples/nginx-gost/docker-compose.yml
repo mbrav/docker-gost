@@ -1,0 +1,40 @@
+services:
+  # Nginx server: serves HTML over HTTPS using a self-signed GOST 2012 certificate.
+  # The entrypoint generates the certificate on first start and stores it in the
+  # shared 'certs' volume so the proxy can also reach the server over GOST TLS.
+  server:
+    image: mbrav/docker-gost:bookworm-nginx
+    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]
+    volumes:
+      - certs:/etc/nginx/certs
+      - ./entrypoint.sh:/scripts/entrypoint.sh:ro
+      - ./nginx/server.nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./html:/var/www/html:ro
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - >
+          openssl s_client
+          -connect localhost:443
+          -cipher GOST2012-KUZNYECHIK-KUZNYECHIKOMAC
+          </dev/null 2>/dev/null | grep -q CONNECTED
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # Cleartext proxy: listens on port 8080, proxies requests to the server over
+  # GOST TLS, and re-serves them in plain HTTP so a regular browser can reach
+  # the content without needing GOST cipher support.
+  proxy:
+    image: mbrav/docker-gost:bookworm-nginx
+    volumes:
+      - ./nginx/proxy.nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      server:
+        condition: service_healthy
+
+volumes:
+  certs:
